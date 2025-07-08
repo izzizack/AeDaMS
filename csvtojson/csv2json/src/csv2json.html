@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSV Merger</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    label { display: block; margin-top: 10px; }
+    input[type="text"], input[type="number"], input[type="file"] { margin-bottom: 10px; width: 300px; }
+    table { border-collapse: collapse; margin-top: 20px; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 4px 8px; text-align: left; }
+    th { background: #f0f0f0; }
+    .btn { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h2>CSV Merger</h2>
+  <label>URL/Local File Link: <input type="text" id="baseUrl" value="http://165.232.169.45:1880/download?filename=/home/datalog/"></label>
+  <label>Sensor CSV File: <input type="text" id="sensorFileName" value="20250702v1.csv"></label>
+  <input type="file" id="sensorFileInput">
+  <label>Weather CSV File: <input type="text" id="weatherFileName" value="20250702Weather.csv"></label>
+  <input type="file" id="weatherFileInput">
+  <label>Start Date: <input type="text" id="startDate" value="20250702"></label>
+  <label>Observation Days: <input type="number" id="obsDays" value="10"></label>
+  <label>Observation Hour: <input type="text" id="obsHour" value="9:00AM"></label>
+  <label>Tank (range: 1-20): <input type="number" id="tank" value="1" min="1" max="20"></label>
+  <label>Experiment Name: <input type="text" id="expName" value="kbta_q_2023"></label>
+  <br>
+  <button class="btn" onclick="readCSV()">Read CSV</button>
+  <button class="btn" onclick="convertToJSON()">Convert to JSON</button>
+  <div id="tableContainer"></div>
+  <textarea id="jsonOutput" style="width:100%;height:200px;display:none;"></textarea>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    // Helper: fetch or read file as text
+    function getFileText(fileInput, url) {
+      return new Promise((resolve, reject) => {
+        if (fileInput.files.length > 0) {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.onerror = reject;
+          reader.readAsText(fileInput.files[0]);
+        } else if (url) {
+          fetch(url)
+            .then(r => r.ok ? r.text() : Promise.reject('Network error'))
+            .then(resolve)
+            .catch(reject);
+        } else {
+          reject('No file or URL provided');
+        }
+      });
+    }
+
+    let mergedData = [];
+
+    async function readCSV() {
+      const baseUrl = document.getElementById('baseUrl').value;
+      const sensorFileName = document.getElementById('sensorFileName').value;
+      const weatherFileName = document.getElementById('weatherFileName').value;
+      const sensorFileInput = document.getElementById('sensorFileInput');
+      const weatherFileInput = document.getElementById('weatherFileInput');
+      const expName = document.getElementById('expName').value;
+
+      try {
+        // Read sensor CSV
+        const sensorUrl = baseUrl + sensorFileName;
+        const sensorText = await getFileText(sensorFileInput, sensorUrl);
+        const sensorData = Papa.parse(sensorText, {header:true, skipEmptyLines:true}).data;
+
+        // Read weather CSV
+        const weatherUrl = baseUrl + weatherFileName;
+        const weatherText = await getFileText(weatherFileInput, weatherUrl);
+        const weatherData = Papa.parse(weatherText, {header:true, skipEmptyLines:true}).data;
+
+        // Merge by timestamp
+        const weatherMap = {};
+        weatherData.forEach(row => {
+          weatherMap[row.timestamp] = row;
+        });
+
+        mergedData = sensorData.map(row => {
+          const w = weatherMap[row.timestamp] || {};
+          // Build F3 row
+          return {
+            date: timestampToDate(row.timestamp),
+            experiment_id: expName,
+            species_id: '', // blank
+            day: '', // blank
+            od_680: row.Algae || 0,
+            ph: row.pH || 0,
+            nitrate: 0,
+            salinity: row.Salinity || 0,
+            co2: row.CO2 || 0,
+            temp: w.Temperature || 0,
+            sunlight: w.Sunlight || 0,
+            h2o2: 0,
+            remarks: '',
+            harvest: ''
+          };
+        });
+
+        showTable(mergedData);
+        document.getElementById('jsonOutput').style.display = 'none';
+      } catch (e) {
+        alert('Error: ' + e);
+      }
+    }
+
+    function timestampToDate(ts) {
+      // Handles scientific notation and string numbers
+      let n = Number(ts);
+      if (isNaN(n)) return '';
+      let d = new Date(n);
+      if (d.getFullYear() < 2000) d = new Date(n * 1000); // fallback for seconds
+      if (d.getFullYear() < 2000) d = new Date(n * 1000 * 1000); // fallback for ms
+      return d.toISOString().slice(0,10);
+    }
+
+    function showTable(data) {
+      if (!data.length) return;
+      const keys = Object.keys(data[0]);
+      let html = '<table><thead><tr>' + keys.map(k => `<th>${k}</th>`).join('') + '</tr></thead><tbody>';
+      data.forEach(row => {
+        html += '<tr>' + keys.map(k => `<td>${row[k]}</td>`).join('') + '</tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('tableContainer').innerHTML = html;
+    }
+
+    function convertToJSON() {
+      if (!mergedData.length) return;
+      document.getElementById('jsonOutput').value = JSON.stringify(mergedData, null, 2);
+      document.getElementById('jsonOutput').style.display = '';
+    }
+  </script>
+</body>
+</html>

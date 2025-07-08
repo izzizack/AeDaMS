@@ -1,0 +1,37 @@
+[
+    {
+        "SampleID": "S1",
+        "AlgaeType": "Chlorella",
+        "Biomass_mg_per_cm2": "12.5",
+        "pH": "7.2",
+        "Temperature_C": "20.1"
+    },
+    {
+        "SampleID": "S2",
+        "AlgaeType": "Scenedesmus",
+        "Biomass_mg_per_cm2": "15.3",
+        "pH": "7.5",
+        "Temperature_C": "19.8"
+    },
+    {
+        "SampleID": "S3",
+        "AlgaeType": "Anabaena",
+        "Biomass_mg_per_cm2": "10.8",
+        "pH": "6.9",
+        "Temperature_C": "21.0"
+    },
+    {
+        "SampleID": "S4",
+        "AlgaeType": "Spirogyra",
+        "Biomass_mg_per_cm2": "13.7",
+        "pH": "7.1",
+        "Temperature_C": "20.5"
+    },
+    {
+        "SampleID": "S5",
+        "AlgaeType": "Nostoc",
+        "Biomass_mg_per_cm2": "11.2",
+        "pH": "7.3",
+        "Temperature_C": "20.0"
+    }
+]

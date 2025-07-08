@@ -1,0 +1,6 @@
+SampleID,AlgaeType,Biomass_mg_per_cm2,pH,Temperature_C
+S1,Chlorella,12.5,7.2,20.1
+S2,Scenedesmus,15.3,7.5,19.8
+S3,Anabaena,10.8,6.9,21.0
+S4,Spirogyra,13.7,7.1,20.5
+S5,Nostoc,11.2,7.3,20.0
